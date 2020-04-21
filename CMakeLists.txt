@@ -17,13 +17,8 @@ set(INC include/conc_queue/synch_queue.h
         include/archive_handler/archive_handler.h include/word_counting/word_counting.h)
 add_executable(word_indexing main.cpp ${SRC} ${INC})
 
-add_executable(xxx example.cpp ${SRC} ${INC})
 target_link_libraries(word_indexing ${LibArchive_LIBRARIES}
     Threads::Threads ${Boost_LIBRARIES} Boost::locale Boost::system
-        ICU::uc ICU::i18n)
-
-target_link_libraries(xxx ${LibArchive_LIBRARIES}
-        Threads::Threads ${Boost_LIBRARIES} Boost::locale Boost::system
         ICU::uc ICU::i18n)
 
 

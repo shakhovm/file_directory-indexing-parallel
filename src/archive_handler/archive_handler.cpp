@@ -39,6 +39,9 @@ std::string archive_handler(const std::string& buffer) {
             throw std::runtime_error("Error when reading next header");
         }
         std::string file_name = archive_entry_pathname(entry);
+        if (file_name == "data") {
+            break;
+        }
 
         if (file_name.substr(file_name.size() - 4, 4) != ".txt" ||
             archive_entry_size(entry) > 10000000) {
@@ -66,21 +69,31 @@ std::string archive_handler(const std::string& buffer) {
 void archive_queue_handler(synch_queue<std::string>& raw_file_queue,
                             synch_queue<word_map>& map_queue) {
     while (true) {
+
         std::string raw_data = raw_file_queue.pop();
-        
+
         if (raw_data.empty()) {
+
             if (raw_file_queue.empty()) {
                 map_queue.set_mul(raw_file_queue.get_counter() - 1);
             }
             break;
         }
 
+        raw_file_queue.descrease_size(raw_data.size());
+
+//        std::cout << raw_data.size() << std::endl;
+//        std::cout << raw_file_queue.size() << std::endl;
+
         std::string text;
         try {
             text = archive_handler(raw_data);
+
         }
         catch (std::runtime_error& e){
+
             continue;
+
         }
 
         word_map wm;
@@ -91,12 +104,15 @@ void archive_queue_handler(synch_queue<std::string>& raw_file_queue,
         for (const auto& x: map) {
             wm[boost::locale::fold_case(boost::locale::normalize(std::string(x)))]++;
         }
+
         if (wm.empty())
             continue;
 
         raw_file_queue.increase_value();
 
         map_queue.push(std::move(wm));
+
+
 
     }
 }

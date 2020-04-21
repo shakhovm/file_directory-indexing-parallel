@@ -13,11 +13,12 @@ void directory_iter(const std::string& directory_path,
                     synch_queue<std::string>& file_queue) {
     auto directory = std::filesystem::directory_iterator(directory_path);
     for (const auto& entry: directory) {
-        if (std::filesystem::is_directory(entry.path())) {
-            directory_iter(entry.path(), file_queue);
+        std::string file_name_entry = entry.path().string();
+        if (std::filesystem::is_directory(file_name_entry)) {
+            directory_iter(file_name_entry, file_queue);
         }
 
-        file_queue.push(entry.path());
+        file_queue.push(file_name_entry);
     }
 }
 
@@ -34,11 +35,18 @@ void file_reader(synch_queue<std::string>& file_queue,
 
             break;
         }
-
+//        std::cout << file_name << std::endl;
         std::ifstream raw_file(file_name, std::ios::binary);
+        std::string raw_data = dynamic_cast<std::ostringstream&>(
+                        std::ostringstream{} << raw_file.rdbuf()).str();
+        if (raw_data.empty()) {
+            continue;
+        }
+        raw_file_queue.increase_size(raw_data.size());
+//        std::cout << raw_file_queue.byte_size << std::endl;
+        raw_file_queue.push(std::move(raw_data));
 
-        raw_file_queue.push(dynamic_cast<std::ostringstream&>(
-                std::ostringstream{} << raw_file.rdbuf()).str());
+
     }
 
 }
@@ -51,12 +59,13 @@ int main()
     std::locale::global(loc);
 
     size_t thread_number = 4;
-    size_t map_threads = 4;
+    size_t map_threads = 2;
 
     std::string file_data;
 
-    std::string path = "../ETEXT02";
-
+//    std::string path = "/home/shakhov/guten";
+//    std::string path = "../ETEXT02";
+    std::string path = "../files";
     std::vector<std::thread> thread_vector;
     std::vector<std::thread> map_thread_vector;
 
