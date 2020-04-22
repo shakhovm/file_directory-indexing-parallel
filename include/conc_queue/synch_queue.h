@@ -22,12 +22,11 @@ private:
     const size_t SIZE_BORDER;
 public:
     std::atomic_size_t byte_size = 0;
-//    synch_queue() = default;
-    explicit synch_queue(size_t border_size=10) : SIZE_BORDER(border_size) {
+    explicit synch_queue(size_t border_size=10) : SIZE_BORDER(border_size) {}
 
-    }
     ~synch_queue() = default;
-    void push(const T& value) {
+
+    void push_back(const T& value) {
         {
             std::unique_lock<std::mutex> lg{mutex_};
 
@@ -37,7 +36,7 @@ public:
         cv.notify_one();
     }
 
-    void push(T&& value) {
+    void push_back(T&& value) {
         {
             std::unique_lock<std::mutex> lg{mutex_};
 
@@ -46,7 +45,32 @@ public:
 
         }
         cv.notify_one();
+
+
     }
+
+    void push_front(const T& value) {
+        {
+            std::unique_lock<std::mutex> lg{mutex_};
+
+            size_notifier.wait(lg, [this]{return queue_.size() < SIZE_BORDER; });
+            queue_.push_front(value);
+        }
+        cv.notify_one();
+    }
+
+    void push_front(T&& value) {
+        {
+            std::unique_lock<std::mutex> lg{mutex_};
+
+            size_notifier.wait(lg, [this]{return queue_.size() <= SIZE_BORDER; });
+            queue_.push_front(value);
+
+        }
+        cv.notify_one();
+    }
+
+
 
     void increase_size(size_t size) {
         byte_size += size;
@@ -97,6 +121,21 @@ public:
         }
         size_notifier.notify_one();
         return elem;
+    }
+
+    std::pair<T, T> pop2() {
+        T elem1;
+        T elem2;
+        {
+            std::unique_lock<std::mutex> ul{mutex_};
+            cv.wait(ul, [this]{return queue_.size() >= 2; });
+            elem1 = queue_.front();
+            queue_.pop_front();
+            elem2 = queue_.front();
+            queue_.pop_front();
+        }
+        size_notifier.notify_one();
+        return std::pair(std::move(elem1), std::move(elem2));
     }
 
     bool empty() const {

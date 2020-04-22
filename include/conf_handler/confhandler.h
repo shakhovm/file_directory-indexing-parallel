@@ -5,10 +5,11 @@
 class ConfHandler {
     std::string content;
     struct ConfParams {
-        std::string infile;
+        std::string input_directory;
         std::string out_by_a;
         std::string out_by_n;
-        size_t thread_number;
+        size_t indexing_threads;
+        size_t merging_threads;
     } conf_params;
 public:
     ConfHandler() = default;

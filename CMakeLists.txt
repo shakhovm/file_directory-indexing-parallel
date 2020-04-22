@@ -10,11 +10,11 @@ find_package(Threads REQUIRED)
 find_package(Boost COMPONENTS locale system REQUIRED)
 find_package(ICU REQUIRED COMPONENTS uc i18n)
 set(SRC src/word_counting/map_merging.cpp src/archive_handler/archive_handler.cpp
-        src/word_counting/word_counting.cpp src/conf_handler/confhandler.cpp)
+        src/conf_handler/confhandler.cpp)
 
 set(INC include/conc_queue/synch_queue.h
         include/word_counting/map_merging.h include/conf_handler/confhandler.h
-        include/archive_handler/archive_handler.h include/word_counting/word_counting.h)
+        include/archive_handler/archive_handler.h include/files_reader/files_reader.h src/files_reader/files_reader.cpp)
 add_executable(word_indexing main.cpp ${SRC} ${INC})
 
 target_link_libraries(word_indexing ${LibArchive_LIBRARIES}

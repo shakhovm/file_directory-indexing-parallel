@@ -6,13 +6,14 @@
 #include <fstream>
 #include "../conc_queue/synch_queue.h"
 
-#include "../../include/word_counting/word_counting.h"
+#include "../../include/word_counting/map_merging.h"
 #include <boost/locale.hpp>
 #include <thread>
 #include <boost/algorithm/string.hpp>
 #include <boost/locale/boundary.hpp>
 
-std::string archive_handler(const std::string& archive_name);
+void archive_handler(const std::string& buffer,
+                     synch_queue<std::string>& string_queue);
 
 void archive_queue_handler(synch_queue<std::string>& file_queue,
                             synch_queue<word_map>& map_queue);

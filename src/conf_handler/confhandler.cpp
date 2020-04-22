@@ -1,7 +1,3 @@
-//
-// Created by shakhov on 4/4/20.
-//
-
 #include "../../include/conf_handler/confhandler.h"
 #include <sstream>
 #include <regex>
@@ -30,8 +26,9 @@ std::string ConfHandler::file_pattern(const std::string& pattern) {
 
 void ConfHandler::conf_file_handler() {
 
-    conf_params.infile = file_pattern(R"(infile=.+\..+)");
+    conf_params.input_directory = file_pattern(R"(input_directory.+\..+)");
     conf_params.out_by_a = file_pattern(R"(out_by_a=.+\..+)");
     conf_params.out_by_n = file_pattern(R"(out_by_n=.+\..+)");
-    std::stringstream(file_pattern( R"(threads=\d+)")) >> conf_params.thread_number;
+    std::stringstream(file_pattern( R"(indexing_threads=\d+)")) >> conf_params.indexing_threads;
+    std::stringstream(file_pattern( R"(merging_threads=\d+)")) >> conf_params.merging_threads;
 }
