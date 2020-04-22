@@ -45,7 +45,7 @@ std::string archive_handler(const std::string& buffer) {
 
         if (file_name.substr(file_name.size() - 4, 4) != ".txt" ||
             archive_entry_size(entry) > 10000000) {
-//            std::cout << file_name << " : " << archive_entry_size(entry) << std::endl;
+            std::cout << file_name << " : " << archive_entry_size(entry) << std::endl;
             continue;
         }
         break;
@@ -80,7 +80,7 @@ void archive_queue_handler(synch_queue<std::string>& raw_file_queue,
             break;
         }
 
-        raw_file_queue.descrease_size(raw_data.size());
+//        raw_file_queue.descrease_size(raw_data.size());
 
 //        std::cout << raw_data.size() << std::endl;
 //        std::cout << raw_file_queue.size() << std::endl;

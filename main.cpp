@@ -11,11 +11,20 @@
 #include <fstream>
 void directory_iter(const std::string& directory_path,
                     synch_queue<std::string>& file_queue) {
-    auto directory = std::filesystem::directory_iterator(directory_path);
+    auto directory = std::filesystem::recursive_directory_iterator(directory_path);
     for (const auto& entry: directory) {
         std::string file_name_entry = entry.path().string();
+
         if (std::filesystem::is_directory(file_name_entry)) {
-            directory_iter(file_name_entry, file_queue);
+            std::cout << file_name_entry << std::endl;
+//            directory_iter(file_name_entry, file_queue);
+            continue;
+        }
+
+        size_t file_size = std::filesystem::file_size(file_name_entry);
+        if (file_size > 10000000) {
+            std::cout << file_name_entry << std::endl;
+//            continue;
         }
 
         file_queue.push(file_name_entry);
@@ -42,10 +51,10 @@ void file_reader(synch_queue<std::string>& file_queue,
         if (raw_data.empty()) {
             continue;
         }
-        raw_file_queue.increase_size(raw_data.size());
+//        raw_file_queue.increase_size(raw_data.size());
 //        std::cout << raw_file_queue.byte_size << std::endl;
         raw_file_queue.push(std::move(raw_data));
-
+//        std::cout << raw_file_queue.size() << std::endl;
 
     }
 
@@ -59,20 +68,22 @@ int main()
     std::locale::global(loc);
 
     size_t thread_number = 4;
-    size_t map_threads = 2;
+    size_t map_threads = 3;
 
     std::string file_data;
 
-//    std::string path = "/home/shakhov/guten";
+    std::string path = "/home/shakhov/guten";
 //    std::string path = "../ETEXT02";
-    std::string path = "../files";
+//    std::string path = "../files";
     std::vector<std::thread> thread_vector;
     std::vector<std::thread> map_thread_vector;
 
-    synch_queue<std::string> file_queue;
-    synch_queue<std::string> raw_file_queue;
-    synch_queue<word_map> map_queue;
-    synch_queue<pair_map> pair_map_queue;
+    // Queue creator
+    synch_queue<std::string> file_queue(40);
+    synch_queue<std::string> raw_file_queue(10);
+    synch_queue<word_map> map_queue(20);
+    synch_queue<pair_map> pair_map_queue(20);
+    // -----------------------------
     auto start = std::chrono::high_resolution_clock::now();
     std::thread directory_handler_thread(directory_iter, std::cref(path),
                 std::ref(file_queue));
@@ -100,21 +111,29 @@ int main()
     file_reader_thread.join();
 
     for (auto &x : thread_vector) x.join();
+
     map_handler_thread.join();
 
     for (auto &x : map_thread_vector) x.join();
     word_map wm = map_queue.pop();
     auto end = std::chrono::high_resolution_clock::now();
     std::cout <<
-        std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count() << std::endl;
+        std::chrono::duration_cast<std::chrono::seconds>(end - start).count() << std::endl;
     std::vector<std::pair<std::string, size_t>> v(wm.begin(), wm.end());
     std::sort(v.begin(), v.end(),
               [](const std::pair<std::string, size_t>& a,
-                 const std::pair<std::string, size_t>& b){return a.second < b.second; });
+                 const std::pair<std::string, size_t>& b){return a.second > b.second; });
     std::ofstream file_out("../result.txt");
 
     for (const auto& x: v) {
         file_out << x.first << " : " << x.second << std::endl;
+    }
+    std::ofstream file_out_by_a("../result_by_a.txt");
+    std::sort(v.begin(), v.end(),
+              [](const std::pair<std::string, size_t>& a,
+                 const std::pair<std::string, size_t>& b){return a.first < b.first; });
+    for (const auto& x: v) {
+        file_out_by_a << x.first << " : " << x.second << std::endl;
     }
 
 

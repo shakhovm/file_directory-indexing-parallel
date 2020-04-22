@@ -19,29 +19,32 @@ private:
     std::atomic_size_t counter = 0;
     std::atomic_size_t mul = -1;
 
-    const size_t SIZE_BORDER = 1000000000;
+    const size_t SIZE_BORDER;
 public:
     std::atomic_size_t byte_size = 0;
-    synch_queue() = default;
+//    synch_queue() = default;
+    explicit synch_queue(size_t border_size=10) : SIZE_BORDER(border_size) {
+
+    }
     ~synch_queue() = default;
     void push(const T& value) {
+        {
+            std::unique_lock<std::mutex> lg{mutex_};
 
-        std::unique_lock<std::mutex> lg{mutex_};
-
-        size_notifier.wait(lg, [this]{return byte_size < SIZE_BORDER;});
-        queue_.push_back(value);
-
+            size_notifier.wait(lg, [this]{return queue_.size() < SIZE_BORDER; });
+            queue_.push_back(value);
+        }
         cv.notify_one();
     }
 
     void push(T&& value) {
-
+        {
             std::unique_lock<std::mutex> lg{mutex_};
 
-            size_notifier.wait(lg, [this]{return byte_size < SIZE_BORDER;});
+            size_notifier.wait(lg, [this]{return queue_.size() <= SIZE_BORDER; });
             queue_.push_back(value);
 
-
+        }
         cv.notify_one();
     }
 
@@ -52,14 +55,14 @@ public:
     void descrease_size(size_t size) {
         byte_size -= size;
 
-        size_notifier.notify_all();
+        size_notifier.notify_one();
     }
 
     template <typename ...Args>
     void emplace(Args&&... args) {
         {
             std::unique_lock<std::mutex> lg{mutex_};
-            size_notifier.wait(lg, [this](){return byte_size < SIZE_BORDER;});
+            size_notifier.wait(lg, [this]{return queue_.size() <= SIZE_BORDER; });
             queue_.emplace_back(args...);
         }
 
@@ -85,11 +88,14 @@ public:
     }
 
     T pop() {
-        std::unique_lock<std::mutex> ul{mutex_};
-        cv.wait(ul, [this]{return !queue_.empty(); });
-        T elem = queue_.front();
-        queue_.pop_front();
-
+        T elem;
+        {
+            std::unique_lock<std::mutex> ul{mutex_};
+            cv.wait(ul, [this]{return !queue_.empty(); });
+            elem = queue_.front();
+            queue_.pop_front();
+        }
+        size_notifier.notify_one();
         return elem;
     }
 
